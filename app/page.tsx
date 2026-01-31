@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default function Home() {
   return (
     <main className="container mx-auto p-4 md:p-8 space-y-8">

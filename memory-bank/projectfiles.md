@@ -28,3 +28,6 @@ This is a list of the core application files, excluding configuration files and 
 
 ## Database
 - `prisma/schema.prisma`: Schema definition for the PostgreSQL database (contains `Pc` model).
+
+## Deployment
+- `Dockerfile`: Multi-stage Docker build configuration for Next.js standalone output.

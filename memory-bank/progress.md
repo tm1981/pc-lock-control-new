@@ -15,6 +15,9 @@
   - [x] Schedule UI in PC Detail view.
   - [x] Persistence of schedule in DB.
   - [x] Pushing schedule updates to PC.
+- [x] **Deployment**:
+  - [x] Dockerfile creation.
+  - [x] Prisma runtime migration support in Docker.
 
 ## Known Issues
 - **Networking**: LAN access triggers "Cross origin request" warnings in Next.js dev server.

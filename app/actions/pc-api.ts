@@ -23,19 +23,22 @@ async function fetchFromApi(url: string, port: number, endpoint: string, options
     }
     return await response.json()
   } catch (error) {
-    console.error(`Failed to fetch from ${apiUrl}:`, error)
+    // Only log if it's NOT a connection error (which is expected when offline)
+    const isConnectionError = error instanceof TypeError && error.message === 'fetch failed';
+    if (!isConnectionError) {
+        console.error(`Failed to fetch from ${apiUrl}:`, error)
+    }
     throw error
   }
 }
 
-export async function getLockStatus(url: string, port: number): Promise<boolean> {
+export async function getLockStatus(url: string, port: number): Promise<boolean | null> {
   try {
     const data = await fetchFromApi(url, port, '/status', { cache: 'no-store' }) as PcStatus
     return data.locked
   } catch (error) {
-    // If we can't connect, assume unknown/unreachable, but for UI simplicity might return false or throw
-    console.error("Could not get lock status", error);
-    throw new Error("Could not connect to PC Lock Service")
+    // Return null if offline, don't throw
+    return null
   }
 }
 

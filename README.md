@@ -52,3 +52,35 @@ A modern web dashboard for managing and scheduling lock states on remote Windows
 2.  Click **Add PC**.
 3.  Enter the Name, IP Address, Port (default 8765), and the API Password configured on the target PC app.
 4.  Once added, use the **Control** button to manage the PC.
+
+## Docker Deployment
+
+### Build the Image
+```bash
+docker build -t pc-lock-control .
+```
+
+### Run the Container
+Replace the `DATABASE_URL` with your actual PostgreSQL connection string.
+```bash
+docker run --rm -p 3000:3000 -e DATABASE_URL="postgresql://user:password@hostname:5432/dbname?schema=public" pc-lock-control:latest
+```
+
+### Docker Compose
+You can also use Docker Compose. Create a `docker-compose.yml` file:
+
+```yaml
+services:
+  app:
+    build: .
+    image: pc-lock-control:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@hostname:5432/dbname?schema=public
+    restart: always
+```
+Then run:
+```bash
+docker-compose up -d
+```
