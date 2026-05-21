@@ -39,4 +39,5 @@ COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/prisma ./prisma
 
 EXPOSE 3000
-CMD ["server.js"]
+CMD ["node", "server.js"]
+
