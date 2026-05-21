@@ -21,6 +21,6 @@
 - `zod`: Schema validation.
 
 ## Configuration
-- `.env`: Contains `DATABASE_URL` and other secrets.
+- `.env`: Contains `DATABASE_URL`, `APP_PASSWORD` (single shared password for web app authentication), and other secrets.
 - `prisma/schema.prisma`: Defines the database schema.
 - `next.config.ts`: Next.js configuration.

@@ -16,5 +16,6 @@ A decoupled control system consisting of:
 
 ## Constraints
 - **Connectivity**: The web app must be able to reach the target PCs over the network (LAN or VPN).
-- **Authentication**: Usage of a shared password (API Password) to authorize commands.
+- **Web App Authentication**: Single shared password (`APP_PASSWORD`) required to access the control panel. Cookie-based session, 24-hour expiry. No usernames — anyone with the password can log in.
+- **PC API Authentication**: Usage of a per-PC shared password (API Password) to authorize commands sent to each target machine.
 - **State**: The "truth" of the lock state is on the PC, but the "truth" of the policy (schedule) is effectively managed here and pushed to the PC.

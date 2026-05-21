@@ -22,6 +22,13 @@ The application is built on **Next.js 16 (App Router)** using React Server Compo
 - **Type Safety**: strict `zod` schemas for forms and `typescript` for all logic.
 - **Tailwind + Shadcn/UI**: Consistent, accessible design system.
 
+## Authentication Pattern
+- **Single Password**: No usernames — one shared password (`APP_PASSWORD` env var) protects the entire app.
+- **Session Management**: httpOnly cookie named `session`, set to `authenticated` on successful login. Expires after 24 hours. Secure in production, lax sameSite.
+- **Route Protection**: Root layout calls `getSession()` on every render. If unauthenticated and not on `/login`, redirects to `/login`.
+- **Login Page**: Client component using React's `useActionState` hook. The `login()` server action accepts `(prevState: { error: string } | null, formData: FormData)` signature required by `useActionState`. Form must use the wrapped `formAction` returned from the hook, not the raw function.
+- **Error Handling**: Invalid password returns `{ error: 'Invalid password.' }`, displayed inline in red text below the input field.
+
 ## Data Model
 **`Pc` Model**:
 - `id`: Unique identifier.

@@ -1,9 +1,10 @@
 # Active Context
 
 ## Current Focus
-Stabilizing the codebase and polishing the UI. Recent work has focused on fixing build errors, type safety, and UI interaction improvements.
+Authentication is complete. App now requires a single password to access the control panel, with cookie-based sessions and route protection.
 
 ## Recent Changes
+- **Authentication**: Implemented single-password login system with `APP_PASSWORD` env var, httpOnly session cookies (24h expiry), and root layout route protection. Login page uses `useActionState` for error handling.
 - **Type Fixes**: Resolved strict type errors in `PCConnectionForm` by correctly typing `useForm` and `zodResolver`.
 - **Build Fixes**: Added `'use server'` to `app/actions/control.ts` to fix leakage of Node.js modules into the client bundle.
 - **UI Polish**: Added `cursor-pointer` to `DeleteButton` and `PCConnectionForm` submit button for better UX.

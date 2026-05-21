@@ -18,12 +18,16 @@
 - [x] **Deployment**:
   - [x] Dockerfile creation.
   - [x] Prisma runtime migration support in Docker.
+- [x] **Authentication**:
+  - [x] Single-password login page (`/login`).
+  - [x] httpOnly cookie-based session (24-hour expiry).
+  - [x] Route protection via root layout session check — redirects unauthenticated users to `/login`.
+  - [x] Logout button on dashboard.
 
 ## Known Issues
 - **Networking**: LAN access triggers "Cross origin request" warnings in Next.js dev server.
 - **Schedule Sync**: Current implementation pushes schedule to PC and DB, but doesn't necessarily pull *from* PC on load (uses DB as source of truth). This is an acceptable design choice but worth noting.
 
 ## Future Improvements
-- **Authentication**: Add user login for the web app control panel itself.
 - **Activity Logs**: Track when PCs were locked/unlocked and by whom.
 - **Global Schedule**: Apply a schedule to multiple PCs at once.
