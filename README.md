@@ -4,11 +4,13 @@ A modern web dashboard for managing and scheduling lock states on remote Windows
 
 ## Features
 
-- **Dashboard**: View status of all configured PCs.
-- **Remote Control**: Instantly Lock and Unlock PCs securely.
-- **Scheduling**: Set daily "Lock Windows" (e.g., 10 PM - 7 AM) which are enforced by the target PC.
-- **Management**: Easy interface to Add/Edit/Remove PCs.
-- **Resilient**: Uses local database for persistence and secure API password for communication.
+- **Dashboard**: Live online/locked status of all configured PCs.
+- **Remote Control**: Lock and Unlock PCs; the detail page refreshes every 5 seconds.
+- **Scheduling**: Set daily "Lock Windows" (e.g., 10 PM - 7 AM) which are enforced by the target PC. The PC is the source of truth; the database copy is kept in sync. Shows when tonight was skipped because someone unlocked during the window.
+- **Management**: Add/Edit/Remove PCs. PC API passwords never leave the server.
+- **Secure**: Signed, expiring session cookies; every server action checks the session; login attempts are throttled.
+
+Requires the PC Lock Windows app with the updated API (`GET /api/status` with `Authorization: Bearer`, partial `POST /api/schedule`).
 
 ## Tech Stack
 
@@ -20,12 +22,16 @@ A modern web dashboard for managing and scheduling lock states on remote Windows
 ## Getting Started
 
 1.  **Environment Setup**:
-    Create a `.env` file in the root directory and configure the environment variables:
+    Copy `.env.example` to `.env` (or create `.env`) and configure the environment variables:
     ```bash
     DATABASE_URL="postgresql://user:password@localhost:5432/pclock?schema=public"
     APP_PASSWORD="your-secure-dashboard-password"
+    # optional
+    SESSION_SECRET="long-random-string"
+    INSECURE_COOKIES=true   # only for production over plain http (no HTTPS)
     ```
-    *Note: `APP_PASSWORD` is the single shared password required to authenticate/log in to the web control panel.*
+    *Note: `APP_PASSWORD` is the single shared password required to log in to the web control panel.
+    `SESSION_SECRET` signs the login cookie (derived from `APP_PASSWORD` if unset).*
 
 2.  **Install Dependencies**:
     ```bash
@@ -46,6 +52,11 @@ A modern web dashboard for managing and scheduling lock states on remote Windows
     ```bash
     npm run build
     npm start
+    ```
+
+6.  **Check the PC API client** against a running PC Lock app (does lock, unlock and changes the schedule!):
+    ```bash
+    npm run check:pc-api -- <host> <port> <password>
     ```
 
 ## Usage
@@ -83,13 +94,14 @@ To publish the image to Docker Hub under `tm81/pc-lock-control`:
    ```
 
 ### 3. Run the Container
-Run the container by passing the `DATABASE_URL` and `APP_PASSWORD` environment variables.
+Run the container by passing the `DATABASE_URL` and `APP_PASSWORD` environment variables. `INSECURE_COOKIES=true` is needed when the dashboard is opened over plain http; drop it behind HTTPS.
 
 #### Interactive Mode (for testing)
 ```bash
 docker run --rm -p 3000:3000 \
   -e DATABASE_URL="postgresql://user:password@hostname:5432/dbname?schema=public" \
   -e APP_PASSWORD="your-secure-dashboard-password" \
+  -e INSECURE_COOKIES=true \
   pc-lock-control
 ```
 
@@ -98,6 +110,7 @@ docker run --rm -p 3000:3000 \
 docker run -d --name pc-lock-control -p 3000:3000 \
   -e DATABASE_URL="postgresql://user:password@hostname:5432/dbname?schema=public" \
   -e APP_PASSWORD="your-secure-dashboard-password" \
+  -e INSECURE_COOKIES=true \
   --restart unless-stopped \
   pc-lock-control
 ```
@@ -116,6 +129,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@hostname:5432/dbname?schema=public
       - APP_PASSWORD=your-secure-dashboard-password
+      # remove if you serve the app over HTTPS
+      - INSECURE_COOKIES=true
     restart: always
 ```
 

@@ -17,66 +17,61 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { createPc, updatePc } from '@/app/actions/db'
+import type { PcSummary } from '@/lib/types'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
-const formSchema = z.object({
-    name: z.string().min(2, {
+const baseSchema = z.object({
+    name: z.string().trim().min(2, {
         message: 'Name must be at least 2 characters.',
     }),
-    url: z.string().min(1, {
-        message: 'URL is required.',
-    }),
-    port: z.coerce.number().min(1).max(65535),
-    password: z.string().min(1, {
-        message: 'Password is required.',
-    }),
+    url: z
+        .string()
+        .trim()
+        .min(1, { message: 'Host is required.' })
+        .regex(/^[A-Za-z0-9.-]+$/, { message: 'Use an IP address or host name, without http:// or a port.' }),
+    port: z.coerce.number().int().min(1).max(65535),
 })
 
+const createSchema = baseSchema.extend({
+    password: z.string().min(1, { message: 'Password is required.' }),
+})
+const editSchema = baseSchema.extend({ password: z.string() })
+
+type FormValues = z.infer<typeof editSchema>
+
 interface PCConnectionFormProps {
-    initialData?: {
-        id: number
-        name: string
-        url: string
-        port: number
-        password?: string
-    }
+    initialData?: PcSummary
     onSuccess?: () => void
 }
 
 export function PCConnectionForm({ initialData, onSuccess }: PCConnectionFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
-
-    // Explicitly define the form values type to match inferred schema
-    type FormValues = z.infer<typeof formSchema>
+    const isEdit = Boolean(initialData)
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema) as Resolver<FormValues>,
+        resolver: zodResolver(isEdit ? editSchema : createSchema) as Resolver<FormValues>,
         defaultValues: {
-            name: initialData?.name || '',
-            url: initialData?.url || '127.0.0.1',
-            port: initialData?.port || 8765,
-            password: initialData?.password || '',
+            name: initialData?.name ?? '',
+            url: initialData?.url ?? '127.0.0.1',
+            port: initialData?.port ?? 8765,
+            password: '',
         },
     })
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: FormValues) {
         setIsLoading(true)
         try {
-            if (initialData) {
-                await updatePc(initialData.id, values)
-                toast.success('PC updated successfully')
-            } else {
-                await createPc(values)
-                toast.success('PC added successfully')
+            const result = initialData ? await updatePc(initialData.id, values) : await createPc(values)
+            if (!result.ok) {
+                toast.error(result.error)
+                return
             }
-            form.reset()
+            toast.success(initialData ? 'PC updated successfully' : 'PC added successfully')
             onSuccess?.()
+            router.push(`/pc/${result.data.id}`)
             router.refresh()
-        } catch (error) {
-            toast.error('Something went wrong')
-            console.error(error)
         } finally {
             setIsLoading(false)
         }
@@ -133,10 +128,15 @@ export function PCConnectionForm({ initialData, onSuccess }: PCConnectionFormPro
                         <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                                <Input type="password" placeholder="API Password" {...field} />
+                                <Input
+                                    type="password"
+                                    autoComplete="new-password"
+                                    placeholder={isEdit ? 'Leave blank to keep the current password' : 'API Password'}
+                                    {...field}
+                                />
                             </FormControl>
                             <FormDescription>
-                                The password configured in the PC Lock app.
+                                The unlock password configured in the PC Lock app.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

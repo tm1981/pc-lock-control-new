@@ -1,56 +1,77 @@
 'use server'
 
-import { getPc } from './db'
-import * as api from './pc-api'
 import { revalidatePath } from 'next/cache'
+import * as z from 'zod'
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
+import * as api from '@/lib/pc-api'
+import { fetchPcState, findPc, toState } from '@/lib/pcs'
+import type { ActionResult, PcState } from '@/lib/types'
 
+// Server actions return errors instead of throwing: thrown messages are hidden in production builds.
 
-export async function getPcStatus(id: number) {
-  const pc = await getPc(id)
-  if (!pc) throw new Error('PC not found')
-
-  return await api.getLockStatus(pc.url, pc.port)
-}
-
-export async function lockPcById(id: number) {
-  const pc = await getPc(id)
-  if (!pc) throw new Error('PC not found')
-  if (!pc.password) throw new Error('Password not configured for this PC')
-
-  const result = await api.lockPc(pc.url, pc.port, pc.password)
-  revalidatePath(`/pc/${id}`)
-  return result
-}
-
-export async function unlockPcById(id: number) {
-  const pc = await getPc(id)
+async function loadPc(id: number) {
+  await requireAuth()
+  const pc = await findPc(id)
   if (!pc) throw new Error('PC not found')
   if (!pc.password) throw new Error('Password not configured for this PC')
-
-  const result = await api.unlockPc(pc.url, pc.port, pc.password)
-  revalidatePath(`/pc/${id}`)
-  return result
+  return pc
 }
 
-export async function updatePcSchedule(id: number, schedule: { enabled: boolean; start: string; end: string }) {
-  const pc = await getPc(id)
-  if (!pc) throw new Error('PC not found')
-  if (!pc.password) throw new Error('Password not configured for this PC')
+function fail(error: unknown): { ok: false; error: string } {
+  return { ok: false, error: error instanceof Error ? error.message : 'Something went wrong' }
+}
 
-  // Update real PC
-  const result = await api.updateSchedule(pc.url, pc.port, pc.password, schedule)
+export async function getPcState(id: number): Promise<ActionResult<PcState>> {
+  try {
+    return { ok: true, data: await fetchPcState(await loadPc(id)) }
+  } catch (error) {
+    return fail(error)
+  }
+}
 
-  // Update DB
-  await prisma.pc.update({
-    where: { id },
-    data: {
-      scheduleEnabled: schedule.enabled,
-      scheduleStart: schedule.start,
-      scheduleEnd: schedule.end
-    }
-  })
+export async function lockPcById(id: number): Promise<ActionResult<PcState>> {
+  try {
+    const status = await api.lockPc(await loadPc(id))
+    revalidatePath(`/pc/${id}`)
+    return { ok: true, data: toState(status) }
+  } catch (error) {
+    return fail(error)
+  }
+}
 
-  revalidatePath(`/pc/${id}`)
-  return result
+export async function unlockPcById(id: number): Promise<ActionResult<PcState>> {
+  try {
+    const status = await api.unlockPc(await loadPc(id))
+    revalidatePath(`/pc/${id}`)
+    return { ok: true, data: toState(status) }
+  } catch (error) {
+    return fail(error)
+  }
+}
+
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:MM')
+const scheduleSchema = z
+  .object({ enabled: z.boolean(), start: hhmm, end: hhmm })
+  .refine((s) => s.start !== s.end, { message: 'Lock and unlock times must differ' })
+
+export async function updatePcSchedule(
+  id: number,
+  input: { enabled: boolean; start: string; end: string },
+): Promise<ActionResult<PcState>> {
+  try {
+    const parsed = scheduleSchema.safeParse(input)
+    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid schedule' }
+    const pc = await loadPc(id)
+    await api.updateSchedule(pc, parsed.data)
+    await prisma.pc.update({
+      where: { id },
+      data: { scheduleEnabled: parsed.data.enabled, scheduleStart: parsed.data.start, scheduleEnd: parsed.data.end },
+    })
+    revalidatePath(`/pc/${id}`)
+    return { ok: true, data: await fetchPcState({ ...pc, scheduleEnabled: parsed.data.enabled,
+      scheduleStart: parsed.data.start, scheduleEnd: parsed.data.end }) }
+  } catch (error) {
+    return fail(error)
+  }
 }

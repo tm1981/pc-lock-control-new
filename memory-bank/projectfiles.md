@@ -15,11 +15,16 @@ This is a list of the core application files, excluding configuration files and 
 - `app/actions/auth.ts`: Authentication server actions — `login(prevState, formData)` (useActionState-compatible), `logout()`, `getSession()`. Uses httpOnly cookies and `APP_PASSWORD` env variable.
 - `app/actions/control.ts`: Orchestrates locking logic, DB updates, and Next.js cache revalidation.
 - `app/actions/db.ts`: CRUD operations for the `Pc` database model using Prisma.
-- `app/actions/pc-api.ts`: Low-level REST API client for communicating with the Windows PC app.
+- `lib/pc-api.ts`: Server-only REST client for the Windows PC app (timeouts, Bearer auth, error mapping).
+- `lib/pcs.ts`: Server-only PC reads (`listPcs`, `findPc`, `listPcsWithState`, `fetchPcState`).
+- `lib/session.ts` / `lib/auth.ts`: Signed session tokens and `requireAuth()`.
+- `lib/types.ts`: `PcState`, `PcSummary`, `ActionResult` shared with client components.
+- `scripts/check-pc-api.ts`: `npm run check:pc-api -- host port password` smoke test (really locks!).
 
 ## Components
-- `components/delete-button.tsx`: Icon button with confirmation logic to delete a PC.
-- `components/lock-control.tsx`: Visual Lock/Unlock status indicator and control buttons.
+- `components/delete-button.tsx`: Delete with a confirmation dialog.
+- `components/pc-panel.tsx`: Client wrapper on the detail page; polls `getPcState` every 5s and shares state.
+- `components/lock-control.tsx`: Lock/Unlock status (reason, since) and control buttons.
 - `components/pc-connection-form.tsx`: Reusable form (React Hook Form + Zod) for adding/editing PCs.
 - `components/pc-list.tsx`: Server component that fetches PCs and renders the dashboard grid.
 - `components/schedule-manager.tsx`: Client component for viewing and editing the lock schedule.

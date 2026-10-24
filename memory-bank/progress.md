@@ -24,9 +24,12 @@
   - [x] Route protection via root layout session check — redirects unauthenticated users to `/login`.
   - [x] Logout button on dashboard.
 
+- [x] **Hardening (2026-10-23)**: signed sessions, authenticated actions, server-only PC client, no passwords to the browser.
+- [x] **Live status**: dashboard counts and badges, 5s polling on detail page, schedule pulled from PC.
+
 ## Known Issues
-- **Networking**: LAN access triggers "Cross origin request" warnings in Next.js dev server.
-- **Schedule Sync**: Current implementation pushes schedule to PC and DB, but doesn't necessarily pull *from* PC on load (uses DB as source of truth). This is an acceptable design choice but worth noting.
+- **Networking**: LAN access triggers "Cross origin request" warnings in the dev server (`allowedDevOrigins` in next.config.ts).
+- **Migrations**: the Docker image does not run `prisma migrate deploy` itself.
 
 ## Future Improvements
 - **Activity Logs**: Track when PCs were locked/unlocked and by whom.
